@@ -94,10 +94,16 @@ public class SqlSessionFactoryBean
   private static final ResourcePatternResolver RESOURCE_PATTERN_RESOLVER = new PathMatchingResourcePatternResolver();
   private static final MetadataReaderFactory METADATA_READER_FACTORY = new CachingMetadataReaderFactory();
 
+  /**
+   * 指定 mybatis-config.xml 路径的 Resource 对象
+   */
   private Resource configLocation;
 
   private Configuration configuration;
 
+  /**
+   * 指定 Mapper 路径的 Resource 数组
+   */
   private Resource[] mapperLocations;
 
   private DataSource dataSource;
@@ -487,7 +493,7 @@ public class SqlSessionFactoryBean
     notNull(sqlSessionFactoryBuilder, "Property 'sqlSessionFactoryBuilder' is required");
     state((configuration == null && configLocation == null) || !(configuration != null && configLocation != null),
         "Property 'configuration' and 'configLocation' can not specified with together");
-
+    // 创建sqlSessionFactory
     this.sqlSessionFactory = buildSqlSessionFactory();
   }
 
@@ -506,6 +512,7 @@ public class SqlSessionFactoryBean
 
     final Configuration targetConfiguration;
 
+    // 初始化 configuration 对象，和设置 configuration.variables 属性
     XMLConfigBuilder xmlConfigBuilder = null;
     if (this.configuration != null) {
       targetConfiguration = this.configuration;
@@ -584,6 +591,7 @@ public class SqlSessionFactoryBean
 
     if (xmlConfigBuilder != null) {
       try {
+        // 解析 mybatis-config.xml
         xmlConfigBuilder.parse();
         LOGGER.debug(() -> "Parsed configuration file: '" + this.configLocation + "'");
       } catch (Exception ex) {
@@ -593,6 +601,7 @@ public class SqlSessionFactoryBean
       }
     }
 
+    // 初始化transactionFactory对象
     targetConfiguration.setEnvironment(new Environment(this.environment,
         this.transactionFactory == null ? new SpringManagedTransactionFactory() : this.transactionFactory,
         this.dataSource));
@@ -606,6 +615,7 @@ public class SqlSessionFactoryBean
             continue;
           }
           try {
+            // XMLMapper 文件并解析
             XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(mapperLocation.getInputStream(),
                 targetConfiguration, mapperLocation.toString(), targetConfiguration.getSqlFragments());
             xmlMapperBuilder.parse();
@@ -620,7 +630,7 @@ public class SqlSessionFactoryBean
     } else {
       LOGGER.debug(() -> "Property 'mapperLocations' was not specified.");
     }
-
+    // 创建sqlSessionFactory
     return this.sqlSessionFactoryBuilder.build(targetConfiguration);
   }
 
@@ -629,6 +639,7 @@ public class SqlSessionFactoryBean
    */
   @Override
   public SqlSessionFactory getObject() throws Exception {
+    // 保证sqlSessionFactory初始化
     if (this.sqlSessionFactory == null) {
       afterPropertiesSet();
     }
@@ -659,6 +670,7 @@ public class SqlSessionFactoryBean
   public void onApplicationEvent(ApplicationEvent event) {
     if (failFast && event instanceof ContextRefreshedEvent) {
       // fail-fast -> check all statements are completed
+      // 如果MapperStatement们，没有都初始化完成，会抛出异常
       this.sqlSessionFactory.getConfiguration().getMappedStatementNames();
     }
   }
